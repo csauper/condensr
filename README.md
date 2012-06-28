@@ -1,5 +1,6 @@
-Condensr.com
+Condensr
 ============
+http://condensr.com
 
 Demo for "Incorporating Content Structure into Text Analysis Applications"
 
