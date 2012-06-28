@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+<LINK REL=StyleSheet HREF="style.css" TYPE="text/css">
+<title>Condensr -- Restaurant Highlights</title>
+<style>
+    .test-tooltip {
+        width: 600px;
+        border: 1px solid gray;
+        border-radius: 8px;
+        background-color: white;
+        padding: 5px;
+        overflow-x: auto; 
+        overflow-y: auto;
+        margin: 10px;
+        font-size: 13px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .snip {
+        padding-left: 10px;
+        text-indent: 0;
+        display: inline-block;
+        vertical-align: middle;
+    }
+
+    .subcategory .snip {
+        padding-left: 0px;
+        line-height: 1.2em;
+    }
+
+    .subcategory {
+        list-style: none;
+        padding: 5px;
+    }
+
+    .subcategory li {
+        background-repeat: no-repeat;
+        background-position: 0px 10px;
+        background-size: 14px;
+        padding-left: 20px;
+    }
+
+    .cluster {
+        padding-bottom: 10px;
+    }
+
+    .seemore {
+        margin-right: 0px;
+        vertical-align: middle;
+    }
+
+    .pages {
+        text-align: center;
+        font-weight: bold;
+        padding: 10px;
+    }
+
+    .nav {
+        padding: 0px 15px;
+        width: 100px;
+        display: inline-block;
+    }
+
+    .infolist {
+        line-height: 1.2em;
+        padding: 0px 15px;
+    }
+
+    .mini {
+        width: 14px;
+    }
+
+
+</style>
+<script>
+  function toggle_visibility(id) {
+    var e = document.getElementById(id);
+    var e_img = document.getElementById(id+"_img");
+    if(e.style.display == 'block') {
+       e.style.display = 'none';
+       e_img.src = "icons/collapse_40b_collapsed.png";
+    }
+    else {
+       e.style.display = 'block';
+       e_img.src = "icons/collapse_40b.png";
+    }
+   }
+	
+</script>
+</head>
+<body>
+    <div class="pages">
+    <% if @params[:start] > 0 %>
+            <a href='browse?start=0' class="nav">&lt;&lt; First</a>
+            <a href='browse?start=<%= [@params[:start]-10,0].max %>' class="nav">&lt; Prev</a>
+        <% else %>
+            <span class="nav">&nbsp;</span>
+            <span class="nav">&nbsp;</span>
+        <% end 
+    %>
+    Page <%= @params[:start]/10 + 1 %>
+    <% max = (@rests.length.to_f/10).round*10.to_i
+        if @params[:start] < max %>
+            <a href='browse?start=<%= [@params[:start]+10,max].min %>' class="nav">Next &gt;</a>
+            <a href='browse?start=<%= max %>' class="nav">Last &gt;&gt;</a>
+        <% else %>
+            <span class="nav">&nbsp;</span>
+            <span class="nav">&nbsp;</span>
+        <% end 
+    %>
+    <br />
+    <% random = rand(max/10) * 10 %>
+        <a href='browse?start=<%= random %>'>Random</a>
+    </div>
+
+    <% @rests[@params[:start],10].each_with_index do |rest,k| 
+        clust = JSON.parse(@rest_clusters[rest["id"]])
+        polarity = {1 => "plus", 0 => "neutral", -1 => "minus"} %>
+
+        <div class="test-tooltip">
+            <div class="balloon">
+                <div class="picture">
+                <img src="<%=rest["image_url"]%>" width="40px" height="40px"/> 
+                </div>
+                <div class="title-block">
+                    <div class="title">
+                        <a href="<%=rest["url"]%>"><%=rest["name"]%></a>
+                    </div>
+                    <br/>
+                    <div class="stars">
+                        <img src="<%=rest["rating_img_url"]%>"/>
+                    </div>
+                    <br/>
+                    <div class="addressblock">
+                        <span class="address"><%=rest["location"]["display_address"].reject{|i| i =~ /^\(/}.join(" ")%></span>
+                        <br/>
+                    </div>
+                    <div class="categories">
+                        <%=rest["categories"].collect{|i| i[0]}.join(", ")%>
+                        <br />
+                    </div>
+                </div>
+            </div>
+            <hr>
+            <div class="infolist">
+                <% clust.each_with_index do |c,j| %>
+                    <div class="cluster">
+                        <img src="icons/<%= polarity[c[0]["polarity"]] %>.png" class= "icon" /><img src="icons/<%= c[0]["label"] %>.png" class="icon" /><%
+                        if c.length > 1
+                            %><a href="javascript:toggle_visibility('secondary_cluster_<%= j %>_<%= k %>');"><img src="icons/collapse_40b_collapsed.png" alt="See more" class="seemore" id="secondary_cluster_<%= j %>_<%= k %>_img"></a><%
+                        else
+                            
+                            %><img src="icons/collapse_40b_blank.png" class="seemore" id="secondary_cluster_<%= j %>_<%= k %>_img"><%
+                        end %>
+                        <div class="snip"> <%= c[0]["phrase"] %></div>
+                        <div id="secondary_cluster_<%= j %>_<%= k %>" style="display:none;" class="secondary">
+                            <ul class="subcategory">
+                                <% c[1..-1].each do |p| %>
+                                    <li style="background-image: url(icons/<%= p["label"] %>.png);" /><div class="snip"><%= p["phrase"] %></div></li>
+                                <% end %>
+                            </ul>
+                        </div>
+                    </div>
+                <% end %>
+            </div>
+        </div>
+    <% end %>
+
+    <div class="pages">
+    <% if @params[:start] > 0 %>
+            <div class="nav"><a href='browse?start=0'>&lt;&lt; First</a></div>
+            <div class="nav"><a href='browse?start=<%= [@params[:start]-10,0].max %>'>&lt; Prev</a></div>
+        <% else %>
+            <div class="nav">&nbsp;</div>
+            <div class="nav">&nbsp;</div>
+        <% end 
+    %>
+    Page <%= @params[:start]/10 + 1 %>
+    <% max = (@rests.length.to_f/10).round*10.to_i
+        if @params[:start] < max %>
+            <div class="nav"><a href='browse?start=<%= [@params[:start]+10,max].min %>'>Next &gt;</a></div>
+            <div class="nav"><a href='browse?start=<%= max %>'>Last &gt;&gt;</a></div>
+        <% else %>
+            <div class="nav">&nbsp;</div>
+            <div class="nav">&nbsp;</div>
+        <% end 
+    %>
+    <br />
+    <% random = rand(max/10) * 10 %>
+        <a href='browse?start=<%= random %>'>Random</a>
+    </div>
+</body>
+</html>

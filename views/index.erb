@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+<LINK REL=StyleSheet HREF="style.css" TYPE="text/css">
+<title>Condensr -- Restaurant Highlights</title>
+<script type="text/javascript"
+    src="http://maps.google.com/maps/api/js?sensor=true">
+</script>
+<script type="text/javascript">
+  var infowindow = null;
+  var map;
+  var geocoder;
+//  var center;
+//  var curloc; 
+//  var locs = [
+//      {"name": "Boston, MA", "loc":[42.358431,-71.059773]},
+//      {"name": "Cambridge, MA", "loc":[42.37264,-71.109653]},
+//      {"name": "San Francisco, CA", "loc":[37.77493,-122.419415]},
+//      {"name": "Berkeley, CA", "loc":[37.8716667,-122.2716667]},
+//      {"name": "Seattle, WA", "loc":[47.60621,-122.332071]},
+//      {"name": "Belltown, Seattle, WA", "loc":[47.616487,-122.35096]},
+//      {"name": "Redmond, WA", "loc":[47.673988,-122.121512]},
+//      {"name": "Bellvue, WA", "loc":[47.610377,-122.200679]},
+//      {"name": "Los Angeles, CA", "loc":[34.052234,-118.243685]},
+//      {"name": "Santa Monica, CA", "loc":[34.019454,-118.491191]},
+//      {"name": "Encino, CA", "loc":[34.159172,-118.501195]},
+//      {"name": "Anaheim, CA", "loc":[33.835293,-117.914504]},
+//      {"name": "Hollywood, CA", "loc":[34.09833,-118.32583]},
+//      {"name": "Philadelphia, PA", "loc":[39.952335,-75.163789]},
+//      {"name": "UPenn, Philadelphia, PA", "loc":[39.951887,-75.193934]},
+//      {"name": "New York, NY", "loc":[40.714353,-74.005973]},
+//      {"name": "Manhattan, NY", "loc":[40.783435,-73.966249]},
+//      {"name": "W. 34th St, NY, NY", "loc":[40.752791,-73.994888]}
+//  ]
+
+
+ var markersById = {};
+	
+	
+  function secondaryPhrases(cluster_data, cluster_index) {
+	res = "<div id=\"secondary_cluster_" + cluster_index + "\" style='display:none;' class='secondary'>"
+	res += "<ul class='subcategory'>"
+	for (var i=1; i < cluster_data[cluster_index].length; i=i+1) {
+            res += "<li>";
+            res += cluster_data[cluster_index][i].phrase;
+            res += "</li>"
+	}
+	res += "</ul>"
+	res += "</div>"
+	return res
+  }	
+
+  function toggle_visibility(id) {
+    var e = document.getElementById(id);
+    var e_img = document.getElementById(id+"_img");
+    if(e.style.display == 'block') {
+       e.style.display = 'none';
+       e_img.src = "icons/collapse_40b_collapsed.png";
+    }
+    else {
+       e.style.display = 'block';
+       e_img.src = "icons/collapse_40b.png";
+    }
+   }
+	
+  function infoBoxContent(cluster_data) {
+	 // Primary	
+	res = "<div class=\"infolist\">";
+	for (i=0; i < cluster_data.length; i=i+1) {
+                res += "<div class=\"cluster\">"
+		var secondary_id = "secondary_cluster_" + i;
+                switch( cluster_data[i][0].polarity) {
+                    case 1:
+                        res += "<img src='icons/plus.png' class='icon'>"; 
+                        break;
+                    case -1:
+                        res += "<img src='icons/minus.png' class='icon'>"; 
+                        break;
+                    default:
+                        res += "<img src='icons/neutral.png' class='icon'>";
+                }
+                switch( cluster_data[i][0].label ) {
+                    case "food":
+                        res += "<img src='icons/food.png' class='icon'>";
+                        break;
+                    case "value":
+                        res += "<img src='icons/value.png' class='icon'>";
+                        break;
+                    case "ambiance":
+                        res += "<img src='icons/ambiance.png' class='icon'>";
+                        break;
+                    case "overall":
+                        res += "<img src='icons/overall.png' class='icon'>";
+                        break;
+                    case "service":
+                        res += "<img src='icons/service.png' class='icon'>";
+                        break;
+                    default:
+                        res += "<img src='icons/neutral.png' class='icon'>";
+                }
+                if (cluster_data[i].length > 1) {
+                    res += "<a href=\"javascript:toggle_visibility('" + secondary_id + "');\"><img src=\"icons/collapse_40b_collapsed.png\" alt=\"See more\" class=\"seemore\" id=\"" + secondary_id + "_img\"></a>";
+                } else {
+                    res += "<img src=\"icons/collapse_40b_blank.png\" class=\"seemore\" id=\"" + secondary_id + "_img\"></a>";
+                }
+                res += cluster_data[i][0].phrase;
+		res += secondaryPhrases(cluster_data, i);
+                res += "</div>";
+	}
+	return res;
+  }
+
+  function getCategories(data) {
+    res = "<div class='categories'>";
+    cats = data.categories.map(function(x) { return x.name });
+    res += cats.join(", ");
+    res += "</div>";
+    return res;
+  }
+
+  // HTML for the popup balloon
+  function balloonContent(data) {
+      res = "<div class=\"balloon\">";
+      res += "<div class=\"picture\"><img src=\"" + data.photo_url_small + "\"></div>";
+      res += "<div class=\"title-block\">";
+      res += "<div class=\"title\"><a href=\"" + data.url + "\">" + data.name + "</a></div><br />";
+      res += "<div class=\"stars\"><img src=\"" + data.rating_img_url + "\"></div><br />";
+      res += "<div class='addressblock'>";
+      res += "<span class='distance'>" + Math.round(data.distance*10)/10 + " miles</span>";
+      res += "<span class='separator'>&#149;</span>";
+      if (data.address1 != "") {
+          res += "<span class='address address1'>" + data.address1 + "</span><br />";
+      }
+      res += "</div>";
+      res += getCategories(data);
+      res += "</div>";
+      res += "</div>";
+      return res;
+  }
+
+  // "About" balloon
+  function infobox() {
+      res = "<div class='about'>";
+      res += "Welcome! This is a demo for a review summarization system. Try a search for restaurants in one of the locations we have coverage for. Our system uses machine learning and natural language processing to automatically find the most useful highlights from Yelp reviews for those restaurants.";
+      res += "<ul>";
+      res += "<li><b>Review highlights by category</b>: We'll always show you a few things about food, since that's usually what matters most, but we'll also show you some extra highlights about service, ambiance, or a few other factors as well.  See the key below for details.</li>";
+      res += "<li><b>Easy identification</b>: To give you an overview at a glance, we've marked each highlight with its category and whether people are saying generally positive or negative things about that.</li>";
+      res += "<li><b>Even more related highlights</b>: In some cases, click the arrows next to the main highlights to see some extra related highlights.</li>"; 
+      res += "</ul>";
+      return res;
+  }
+
+
+  function initialize() {
+    geocoder = new google.maps.Geocoder();
+ //   getGPSLocation();
+
+
+ //   if (curloc) {
+
+ //       console.log(curloc);
+
+ //       closest = locs[0];
+ //       distance = distHaversine(curloc, new google.maps.LatLng(locs[0].loc[0],locs[0].loc[1]));
+
+ //       for (i = 0; i < locs.length; i++) {
+ //           disti = distHaversine(curloc, new google.maps.LatLng(locs[i].loc[0],locs[i].loc[1]));
+ //           if (disti < distance) {
+ //               distance = disti;
+ //               closest = locs[i];
+ //           }
+ //       }
+ //   }
+ //   else {
+ //       closest = locs[0];
+ //   }
+
+    var latlng = new google.maps.LatLng(42.361860,-71.091840);
+    var myOptions = {
+      zoom: 14,
+      //center: new google.maps.LatLng(closest.loc[0],closest.loc[1]),
+      center: latlng,
+      mapTypeId: google.maps.MapTypeId.ROADMAP,
+      disableDefaultUI: true
+    };
+    map = new google.maps.Map(document.getElementById("map_canvas"),myOptions);
+        
+    <% @rests.each_with_index do |rest,i| %> 
+	var cluster_data = <%= @rest_clusters[rest["id"]] %>;
+    var data = <%= rest.to_json %>;
+	//infoBoxContent(cluster_data)
+    putMarker(data.id,data.latitude, data.longitude, data.name, infoBoxContent(cluster_data), balloonContent(data), <%= i %>);
+    <% end %>
+    codeAddress();
+  }
+  
+
+  function codeAddress() {
+      address =  "<%= if @params[:loc] then @params[:loc] else 'Boston, MA' end %>";
+      geocoder.geocode( { 'address': address}, function(results, status) {
+      if (status == google.maps.GeocoderStatus.OK) {
+        //map.setCenter(results[0].geometry.location);
+        var marker = new google.maps.Marker({
+            map: map, 
+            position: results[0].geometry.location
+        });
+        google.maps.event.addListener(marker, 'click', function() {
+            infowindow.setContent("<div style='padding:10px'><span class='title'><b>Condensr</b></span> -- " + address + "</div><hr>"+infobox());
+          infowindow.open(map,marker);
+        });
+        pos = marker.getPosition();
+        map.setCenter(pos);
+                <%= if @first == true then "map.setCenter(new google.maps.LatLng(pos.lat()+.01,pos.lng())); google.maps.event.trigger(marker, 'click');" end %>
+      } 
+    });
+  }
+  
+  function putMarker(rest_id,lat,lon,title,infocontent,balcontent, i) {
+    var marker = createMarker(lat,lon,title,i);
+    markersById[rest_id] = marker;
+    addListeners(marker,infocontent,balcontent);
+    return marker;
+  }
+  
+  function addListeners(marker,infocontent,balcontent) {
+        if (infowindow){
+            infowindow.close()
+        }
+        
+        if(!infowindow) { 
+            infowindow = new google.maps.InfoWindow({ 
+                content: marker.getTitle()
+            }); 
+        } 
+
+        google.maps.event.addListener(marker, 'click', function() {
+                infowindow.setContent(balcontent + "<hr>" +  infocontent);
+          infowindow.open(map,marker);
+        });
+  }
+
+  function createMarker(lat,lon,title,i) {
+    return new google.maps.Marker({
+        position: new google.maps.LatLng(lat,lon), 
+        map: map,
+        icon: "http://maps.google.com/mapfiles/marker" + String.fromCharCode(i + 65) + ".png",
+        title: title
+    });
+  }
+
+  function createInfoWin(content) {
+    return new google.maps.InfoWindow({
+        content: content 
+    }); 
+  }
+  
+  function infoWinActivate(rest_id) {
+	var marker = markersById[rest_id]
+	google.maps.event.trigger(marker, 'click')
+  }
+
+  function getGPSLocation () {
+    if ((navigator != null) && (navigator.geolocation != null))
+            watch = navigator.geolocation.watchPosition(updatePosition);
+    else
+    {
+            var so = device.getServerObject ("Service.Location", "ILocation")
+
+            var updateoptions = new Object();
+            updateoptions.PartialUpdates = false;
+
+            var criteria = new Object();
+            criteria.LocationInformationClass = "GenericLocationInfo";
+            criteria.Updateoptions = updateoptions;
+
+            var result = so.ILocation.Trace (criteria, updatePosition);
+    }
+  }
+
+//  // GPS position update
+//  function updatePosition(position)
+//  {
+//     curloc = new google.maps.LatLng (position.coords.latitude,
+//        position.coords.longitude);
+//  }
+//
+//  rad = function(x) {return x*Math.PI/180;}
+//  
+//  distHaversine = function(p1, p2) {
+//    var R = 6371; // earth's mean radius in km
+//    var dLat  = rad(p2.lat() - p1.lat());
+//    var dLong = rad(p2.lng() - p1.lng());
+//  
+//    var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+//            Math.cos(rad(p1.lat())) * Math.cos(rad(p2.lat())) * Math.sin(dLong/2) * Math.sin(dLong/2);
+//    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+//    var d = R * c;
+//  
+//    return d.toFixed(3);
+//  }
+//
+//getGPSLocation();
+
+
+</script>
+</head>
+<body onload="initialize()">
+    <div class="search">
+        <div class="logo">Condensr</div>
+        <form action="search" method="get">
+          <div class="inputbox formelem">
+            <label for="term">Search for</label>
+            <input class="textin" type="text" id="term" name="term" size="25" value="<%= if @params[:term] then @params[:term] end %>" />
+          </div>
+<!--
+          <div class="inputbox formelem">
+            <label for="loc">near</label>
+            <input class="textin" type="text" name="loc" id="loc" size="25" value="<%= if @params[:loc] then @params[:loc] end %>"/>
+          </div>
+          -->
+          <div class="inputbox formelem">
+            <label for="loc">near</label>
+              <select name="loc" id="loc" class="textin">
+                <option value="Boston, MA" <%= if @params[:loc] == "Boston, MA" then "selected=\"selected\"" end %> >Boston, MA</option>
+                <option value="Cambridge, MA" class="subelem" <%= if @params[:loc] == "Cambridge, MA" then "selected=\"selected\"" end %> > -- Cambridge, MA</option>
+                <option value="San Francisco, CA" <%= if @params[:loc] == "San Francisco, CA" then "selected=\"selected\"" end %> >San Francisco, CA</option>
+                <option value="Berkeley, CA" class="subelem" <%= if @params[:loc] == "Berkeley, CA" then "selected=\"selected\"" end %> > -- Berkeley, CA</option>
+                <option value="Seattle, WA" class="subelem" <%= if @params[:loc] == "Seattle, WA" then "selected=\"selected\"" end %> >Seattle, WA</option>
+                <option value="Belltown, Seattle, WA" class="subelem" <%= if @params[:loc] == "Belltown, Seattle, WA" then "selected=\"selected\"" end %> > -- Belltown, Seattle, WA</option>
+                <option value="Redmond, WA" class="subelem" <%= if @params[:loc] == "Redmond, WA" then "selected=\"selected\"" end %> > -- Redmond, WA</option>
+                <option value="Bellevue, WA" class="subelem" <%= if @params[:loc] == "Bellevue, WA" then "selected=\"selected\"" end %> > -- Bellevue, WA</option>
+                <option value="Los Angeles, CA" class="subelem" <%= if @params[:loc] == "Los Angeles, CA" then "selected=\"selected\"" end %> >Los Angeles, CA</option>
+                <option value="Encino, CA" class="subelem" <%= if @params[:loc] == "Encino, CA" then "selected=\"selected\"" end %> > -- Encino, CA</option>
+                <option value="Santa Monica, CA" class="subelem" <%= if @params[:loc] == "Santa Monica, CA" then "selected=\"selected\"" end %> > -- Santa Monica, CA</option>
+                <option value="Anaheim, CA" class="subelem" <%= if @params[:loc] == "Anaheim, CA" then "selected=\"selected\"" end %> > -- Anaheim, CA</option>
+                <option value="Hollywood, CA" class="subelem" <%= if @params[:loc] == "Hollywood, CA" then "selected=\"selected\"" end %> > -- Hollywood, CA</option>
+                <option value="Philadelphia, PA" class="subelem" <%= if @params[:loc] == "Philadelphia, PA" then "selected=\"selected\"" end %> >Philadelphia, PA</option>
+                <option value="New York, NY" class="subelem" <%= if @params[:loc] == "New York, NY" then "selected=\"selected\"" end %> >New York, NY</option>
+                <option value="Manhattan, NY" class="subelem" <%= if @params[:loc] == "Manhattan, NY" then "selected=\"selected\"" end %> > -- Manhattan, NY</option>
+                <option value="W. 34th St., NY, NY" class="subelem" <%= if @params[:loc] == "W. 34th St., NY, NY" then "selected=\"selected\"" end %> > -- W. 34th St., NY, NY</option>
+              </select>
+          </div>
+            <!--label for="radius">Distance</label>
+            <select name="radius" id="radius">
+                <option value="1">1 Mile</option>
+                <option value="2" selected="selected">2 Miles</option>
+                <option value="5">5 Miles</option>
+            </select><br /><br /-->
+
+            <!--input type="text" name="category"  value="<%= if @params[:text] then @params[:text] end %>" style="visibility:hidden"/><br /-->
+
+          <!--  div class="formelem">
+            <label for="submit">&nbsp;</label>
+            <input type="submit" id="submit" value="Search" />
+          </div-->
+          <div class="formelem">
+            <label for="submit">&nbsp;</label>
+            <input class="textin" type="submit" name="submit" id="submit" size="25" value="Search"/>
+          </div>
+        </form>
+
+    </div>
+    <div class="bottom">
+  <div class="searchbar">
+
+    <div class="searchhead">
+        <span class="header"><%= if @params[:term] then "<span class=\"term\">#{@params[:term]}</span><br />" end %><%=if @params[:loc] then "<span style=\"margin-left:10px\">near</span><br /><span class=\"term\">#{@params[:loc]}</span>" end %></span>
+    </div>
+
+    <div class="searchres">
+
+        <ul>
+    <% @rests.each_with_index do |rest,i| %>
+        <li>
+        <!--
+            <img src="<%= "http://maps.google.com/mapfiles/marker#{(i+65).chr}.png"%>" alt="<%= (i+65).chr %>" class="marker"><span class="name"><a href="javascript:infoWinActivate('<%= rest["id"]%>')"><%=rest["name"]%></a></span><br />
+            <img src="<%= rest["rating_img_url"] %>" class="searchstars"><br />
+            -->
+            <div class="titlestars" style="background-image: url('<%= "http://maps.google.com/mapfiles/marker#{(i+65).chr}.png"%>');" ><span class="name"><a href="javascript:infoWinActivate('<%= rest["id"]%>')"><%=rest["name"]%></a></span><br />
+            <img src="<%= rest["rating_img_url"] %>" class="searchstars"><br />
+        </div>
+            <span class="distance"><%= sprintf("%.1f", rest["distance"]) %> miles</span><span class="separator">&#149;</span>
+            <%= if rest["address1"] != "" then "<span class=\"address address1\">#{rest["address1"]}</span> " end%>
+            <%= if rest["address2"] != "" then "<span class=\"address address2\">#{rest["address2"]}</span> " end%>
+            <%= if rest["address3"] != "" then "<span class=\"address address3\">#{rest["address3"]}</span> " end%>
+        </li>
+    <% end %>
+        </ul>
+
+    </div>
+
+    </div>
+<div class="rightpanel">
+    <div id="map_canvas" class="mapcanvas"></div>
+    <div id="legend" class="legend">
+        <table>
+            <tr>
+                <td><img src="icons/food.png" class="icon">Food</td>
+                <td><img src="icons/ambiance.png" class="icon">Ambiance</td>
+                <td><img src="icons/service.png" class="icon">Service</td>
+                <td><img src="icons/value.png" class="icon">Value</td>
+                <td><img src="icons/overall.png" class="icon">Overall</td>
+                <td><img src="icons/plus.png" class="icon">Positive</td>
+                <td><img src="icons/minus.png" class="icon">Negative</td>
+            </tr>
+        </table>
+    </div>
+</div>
+</div>
+    <div class="info">
+        For details on the research behind this system, please see 
+        <a href="http://groups.csail.mit.edu/rbg/code/content_structure.html"><b>Incorporating Content Structure into Text Analysis Applications</b></a> by <a href="http://people.csail.mit.edu/csauper/"><b>Christina Sauper</b></a>, <a href="http://aria42.com"><b>Aria Haghighi</b></a>, <a href="http://people.csail.mit.edu/regina/"><b>Regina Barzilay</b></a>
+    </div>
+
+</body>
+</html>

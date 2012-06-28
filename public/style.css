@@ -1,0 +1,328 @@
+html { height: 100% }
+body { 
+   height: 100%; 
+   margin: 0px; 
+   padding: 0px;
+   font-family: Verdana, Arial, Helvetica, sans-serif;
+   font-size: 14px;
+   line-height: 1.4em;
+   background-color: #E3E9FF;
+}
+a { 
+    text-decoration: none;
+    color: #3e4d7e;
+}
+a:hover { 
+    text-decoration: underline; 
+}
+
+
+/*
+ * main panels 
+ */
+
+.search {
+    width: 100%;
+    background-color: #CCD2E6;
+    border-bottom: 2px solid black;
+    position: absolute;
+    top: 0;
+    height: 60px;
+}
+
+.bottom {
+    position: absolute;
+    overflow: hidden;
+    top: 62px;
+    bottom: 45px;
+}
+
+.searchbar { 
+    width: 350px;
+    height: 100%; 
+    overflow: auto;
+    float: left;
+    background-color: #FFF;
+}
+
+.rightpanel {
+    margin-left: 350px; 
+    height: 100%;
+}
+
+.mapcanvas {
+    height: 95%;
+    border-left: 2px solid black;
+}
+
+.legend {
+    height: 5%;
+    overflow: hidden;
+    border-top: 2px solid black;
+    background-color: #FFF;
+}
+
+/* 
+ * search 
+ */ 
+
+.logo {
+    position: absolute;
+    line-height: 1em;
+    font-size: 30px;
+    font-weight: bold;
+    font-variant: small-caps;
+    width: 15%;
+    margin-top: 1%;
+    margin-left: 1%;
+    text-align: center;
+}
+
+.searchhead {
+    background-color: #E3E9FF;
+    border-bottom: 2px solid black;
+    padding: 5px 10px;
+}
+
+.info {
+    background-color: #E3E9FF;
+    border-top: 2px solid black;
+    padding: 0px 2px;
+    font-size: 13px;
+    position:absolute;
+    bottom:0px;
+    height:40px;
+    overflow: none;
+}
+
+.header {
+    font-size: 16px;
+    line-height: 1.5em;
+    color: #333;
+}
+
+.term {
+    font-weight: bold;
+    color: black;
+}
+
+.searchbox {
+
+    border: 1px solid #666;
+    -webkit-box-shadow: #000 1px 1px 1px;
+    -moz-box-shadow: 1px 1px 1px #000;
+    box-shadow: 1px 1px 1px #000;
+    border-radius: 8px 8px;
+    -moz-border-radius: 8px 8px;
+    margin: 10px 15px;
+    padding: 10px 5px;
+    background-color: #E3E9FF;
+}
+
+label {    
+    margin-right: 0.5em;    
+    text-align: right;   
+    font-weight: bold;
+    text-align: left;
+    display: block;
+}
+
+.search form {
+    text-align: right;
+    margin-right: 3em;
+}
+
+.formelem {
+    margin: auto;
+    text-align: left;
+    display: inline-block;
+}
+
+.inputbox {
+    width: 35%;
+}
+
+.textin {
+    font-size: 25px;
+    width: 95%;
+}
+
+#submit {
+    padding: 0px 15px;
+    font-variant: small-caps;
+}
+
+/*
+#submit {
+    height: 35px;
+    margin-top: -3px;
+    text-decoration:none;
+    color:#333;
+    border: 1px solid #000;
+    -moz-box-shadow:0 1px 1px #333;
+    -webkit-box-shadow:0 1px 1px #333;
+    box-shadow:0 1px 1px #333;
+    text-transform:uppercase;
+    background-color: #E3E9FF;
+    border-radius: 4px 4px;
+}
+    */
+
+.searchres {
+}
+
+.searchres ul {
+    padding-left: 0;
+    margin-left: 0;
+}
+
+.searchres ul li {
+    list-style: none;
+    margin: 0;
+    padding: 0.75em;
+    border-bottom: 1px solid #CCC;
+}
+
+.marker {
+    float: left;
+    padding-right: 10px;
+}
+
+.searchres ul li .name {
+    font-size: 18px;
+}
+
+.searchres ul li .address, .searchres ul li .separator, 
+.searchres ul li .distance {
+    font-size: 12px;
+}
+
+.separator {
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
+.searchres ul li .searchstars {
+    margin: 5px 0px 0px 0px;
+}
+
+.titlestars {
+    background-position: top left;
+    background-repeat: no-repeat;
+    padding-left: 30px;
+}
+
+/*
+ * Map
+ */ 
+
+.balloon {
+}
+
+.balloon .picture {
+    float: left;
+    margin-right: 15px;
+}
+
+.balloon .picture img {
+    -webkit-box-shadow: #333 1px 1px 1px;
+    -moz-box-shadow: 1px 1px 1px #333;
+    box-shadow: 1px 1px 1px #333;
+    border-radius: 8px 8px;
+    -moz-border-radius: 8px 8px;
+    border: 1px solid #333;
+}
+
+.balloon .title-block {
+    display: block;
+}
+
+.balloon .title {
+    font-size: 20px;
+    display: inline-block;
+}
+
+.balloon .stars {
+    display: inline-block;
+    margin-top: 5px;
+}
+
+.balloon .yelp {
+    float: right;
+    margin-right: 4em;
+}
+
+.balloon .addressblock {
+    font-size: 12px;
+    display: inline-block;
+}
+
+.balloon .categories {
+    float: right;
+    display: block;
+}
+
+.about li {
+    margin-bottom: 10px;
+}
+
+.legend table {
+    margin-left: 10px;
+    margin-right: 10px;
+    width: 100%
+}
+
+.legend table tr td {
+    width: 14%;
+}
+
+/*
+ * Info
+ */ 
+
+.clusters {
+
+}
+
+.infolist {
+    line-height: 2em;
+    padding: 0px 15px 15px 15px;
+    clear: both;
+}
+
+.cluster {
+    padding-left: 5em;
+    text-indent: -5em;
+}
+
+.secondary {
+    margin-left: -1.5em;
+}
+
+.infolist ul li {
+   line-height: 2em;
+   color: #666;
+   text-indent: 0em;
+}
+
+.icon {
+    width: 18px;
+    vertical-align: middle;
+    margin-right: 5px;
+}
+
+.seemore {
+    margin-right: 10px;
+    border: 0;
+}
+
+.category-wrapper {
+    margin-right: 5px;
+}
+
+.subcategory { 
+    margin: 0px;
+    -webkit-padding-start: 20px;
+    list-style: square;
+}
+
